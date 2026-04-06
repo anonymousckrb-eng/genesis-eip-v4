@@ -4,10 +4,12 @@ import google.generativeai as genai
 
 app = Flask(__name__, static_folder='.')
 
-# Configuração estável do modelo
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-pro') # Versão estável que evita o erro 404
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+else:
+    model = None
 
 @app.route('/')
 def index():
@@ -17,14 +19,31 @@ def index():
 def chat():
     try:
         data = request.get_json()
-        msg = data.get('message', '')
+        msg = data.get('message', '').strip()
+        if not msg: return jsonify({"response": "ALVO VAZIO"})
+
+        prompt = f"""
+        Aja como o sistema GENESIS_V22. 
+        Gere um relatório estruturado exatamente neste estilo:
         
-        prompt = f"Aja como o sistema GENESIS_V22. Se o usuário enviar um dado técnico (IP, CNPJ, USER), gere um RELATÓRIO DE INTELIGÊNCIA ESTRUTURADO. Alvo: {msg}"
+        // GROQ_INTELLIGENCE_REPORT
+        **Relatório de Risco Rápido e Tático**
         
+        **Alvo:** {msg}
+        
+        **Plataformas Detectadas:**
+        - Analise possíveis vínculos em redes sociais e bancos de dados.
+        
+        **Análise Inicial:**
+        1. Descreva o perfil de risco.
+        2. Liste vulnerabilidades digitais encontradas.
+        """
+
         response = model.generate_content(prompt)
         return jsonify({"response": response.text})
     except Exception as e:
         return jsonify({"response": f"ERRO OPERACIONAL: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
