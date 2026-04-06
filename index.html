@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GENESIS_V22.SYS</title>
+    <style>
+        body { background: #030a16; color: #00f2ff; font-family: 'Courier New', monospace; margin: 0; padding: 20px; }
+        .header { border-bottom: 2px solid #00f2ff; padding-bottom: 10px; margin-bottom: 30px; text-shadow: 0 0 10px #00f2ff; }
+        .card { background: rgba(0, 242, 255, 0.05); border: 1px solid #00414d; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        input { width: 100%; background: #000; border: 1px solid #00414d; color: #00f2ff; padding: 15px; margin: 10px 0; box-sizing: border-box; }
+        .btn-group { display: flex; gap: 10px; }
+        button { flex: 1; background: #00f2ff; color: #000; border: none; padding: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px rgba(0, 242, 255, 0.3); }
+        #output { white-space: pre-wrap; color: #fff; font-size: 14px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>GENESIS_V22.SYS</h1>
+        <small>STATUS: OPERACIONAL // SOBRAL_NODE</small>
+    </div>
+    <div class="card">
+        <h3>INVESTIGAÇÃO DE ALVO</h3>
+        <input type="text" id="target" placeholder="USER, DOMÍNIO OU CNPJ">
+        <div class="btn-group">
+            <button onclick="scan()">USER_SCAN</button>
+            <button onclick="scan()">WHOIS_SCAN</button>
+        </div>
+    </div>
+    <div class="card">
+        <div id="output">> SCANNING_TARGET: ...</div>
+    </div>
+    <script>
+        async function scan() {
+            const val = document.getElementById('target').value;
+            const out = document.getElementById('output');
+            out.innerText = "> INICIANDO SCAN TÁTICO...";
+            try {
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: val})
+                });
+                const d = await res.json();
+                out.innerText = d.response;
+            } catch (e) { out.innerText = "FALHA NA CONEXÃO."; }
+        }
+    </script>
+</body>
+</html>
