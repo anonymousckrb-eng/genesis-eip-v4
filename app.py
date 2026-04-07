@@ -1,10 +1,8 @@
 import os
 import requests
-from flask import Flask, request as req, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 
 app = Flask(__name__, static_folder='.')
-
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 @app.route('/')
 def index():
@@ -12,32 +10,29 @@ def index():
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    if not GEMINI_API_KEY:
-        return jsonify({"response": "ERRO: Chave API ausente no Render."}), 500
-    
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return jsonify({"response": "ERRO: Chave API não configurada no Render."}), 500
+
     try:
-        data = req.get_json()
-        msg = data.get('message', '').strip()
-        
-        # CONEXÃO DIRETA (BYPASS DO SDK)
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-        
+        user_msg = request.json.get("message")
+        # Conexão direta via REST para evitar erros de versão do SDK
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         payload = {
-            "contents": [{"parts": [{"text": msg}]}],
-            "systemInstruction": {"parts": [{"text": "Aja como AYZA, uma inteligência artificial tática e eficiente. Responda sempre em português."}]}
+            "contents": [{"parts": [{"text": user_msg}]}],
+            "systemInstruction": {"parts": [{"text": "Você é AYZA, uma IA de inteligência tática. Responda de forma direta e em português."}]}
         }
-        headers = {'Content-Type': 'application/json'}
-        
-        api_resp = requests.post(url, json=payload, headers=headers)
-        
-        if api_resp.status_code == 200:
-            texto_final = api_resp.json()['candidates'][0]['content']['parts'][0]['text']
-            return jsonify({"response": texto_final})
+
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            result = response.json()
+            bot_response = result['candidates'][0]['content']['parts'][0]['text']
+            return jsonify({"response": bot_response})
         else:
-            return jsonify({"response": f"FALHA DE COMUNICAÇÃO: {api_resp.status_code}"}), 500
-            
+            return jsonify({"response": f"Falha na API: {response.status_code}"}), 500
     except Exception as e:
-        return jsonify({"response": f"FALHA CRÍTICA DE SISTEMA: {str(e)}"}), 500
+        return jsonify({"response": f"Erro interno: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
