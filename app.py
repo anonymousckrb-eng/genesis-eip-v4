@@ -1,9 +1,23 @@
+import os
+import requests
+from flask import Flask, request, jsonify, send_from_directory
+
+# DEFINIÇÃO DO APP (O que estava faltando no seu erro)
+app = Flask(__name__, static_folder='.')
+
+@app.route('/')
+def index():
+    return send_from_directory('.', 'index.html')
+
 @app.route('/chat', methods=['POST'])
 def chat():
     api_key = os.environ.get("GEMINI_API_KEY")
     user_msg = request.json.get("message")
     
-    # Lista de modelos e versões para garantir conexão
+    if not api_key:
+        return jsonify({"response": "ERRO: Chave API ausente no painel Render."}), 500
+    
+    # Tentativa em múltiplos modelos (v1beta e v1) para evitar erro 404
     configs = [
         {"v": "v1beta", "m": "gemini-1.5-flash"},
         {"v": "v1", "m": "gemini-1.0-pro"}
@@ -21,5 +35,10 @@ def chat():
         except:
             continue
             
-    return jsonify({"response": "ERRO TÁTICO: Verifique sua GEMINI_API_KEY no painel do Render."}), 500
+    return jsonify({"response": "ERRO TÁTICO: Falha na comunicação com os núcleos de IA."}), 500
+
+if __name__ == "__main__":
+    # Garante que o Flask use a porta correta do Render
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
 
