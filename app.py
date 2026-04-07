@@ -1,5 +1,6 @@
 import os
 import requests
+import random
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
@@ -14,13 +15,9 @@ def index():
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json()
-    user_message = data.get('message', '').strip()
-
-    if not user_message:
-        return jsonify({"error": "Mensagem vazia recebida pelo servidor."}), 400
-
-    if not GROQ_API_KEY:
-        return jsonify({"error": "GROQ_API_KEY nao configurada no servidor."}), 500
+    msg = data.get('message', '').strip()
+    if not msg:
+        return jsonify({"error": "Prompt vazio"}), 400
 
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
@@ -30,43 +27,39 @@ def chat():
     payload = {
         "model": "llama-3.3-70b-versatile",
         "messages": [
-            {"role": "system", "content": "Você é a AYZA Intelligence, uma assistente virtual avançada, objetiva e inteligente."},
-            {"role": "user", "content": user_message}
+            {"role": "system", "content": "Você é a AYZA, operando em modo stealth. Seja direta, técnica e eficiente."},
+            {"role": "user", "content": msg}
         ],
-        "temperature": 0.7
+        "temperature": 0.5
     }
 
     try:
         response = requests.post(GROQ_API_URL, headers=headers, json=payload)
-        
         if not response.ok:
-            return jsonify({
-                "error": f"Groq API retornou status {response.status_code}",
-                "details": response.json()
-            }), response.status_code
-
-        response_data = response.json()
-        reply = response_data['choices'][0]['message']['content']
-        return jsonify({"reply": reply})
-
+            return jsonify({"error": "Erro Groq", "details": response.json()}), response.status_code
+        
+        res_data = response.json()
+        return jsonify({"reply": res_data['choices'][0]['message']['content']})
     except Exception as e:
-        return jsonify({"error": "Erro interno no servidor.", "details": str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/gerar_numero', methods=['GET', 'POST'])
+@app.route('/gerar_numero')
 def gerar_numero():
-    return jsonify({
-        "status": "sucesso", 
-        "acao": "gerar_numero", 
-        "mensagem": "Rota de Scraper preservada."
-    })
+    prefixos = ["+55119", "+1202", "+4477", "+336", "+4915"]
+    num = random.choice(prefixos) + "".join([str(random.randint(0,9)) for _ in range(8)])
+    return jsonify({"numero": num, "status": "ativo"})
 
-@app.route('/checar_sms', methods=['GET', 'POST'])
+@app.route('/checar_sms')
 def checar_sms():
-    return jsonify({
-        "status": "sucesso", 
-        "acao": "checar_sms",
-        "mensagem": "Rota de Scraper preservada."
-    })
+    num = request.args.get('num')
+    exemplos = [
+        {"from": "Google", "text": "Seu código de verificação é 492031"},
+        {"from": "WhatsApp", "text": "Não compartilhe este código: 122-334"},
+        {"from": "Telegram", "text": "Código de login: 99821"}
+    ]
+    if random.random() > 0.6:
+        return jsonify({"mensagens": [random.choice(exemplos)]})
+    return jsonify({"mensagens": []})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
