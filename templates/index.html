@@ -2,103 +2,133 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Projeto Ayza</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #050505; font-family: 'Plus Jakarta Sans', sans-serif; color: #a1a1aa; overflow: hidden; }
-        .glass-card { background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.03); }
-        .ai-content { line-height: 1.8; font-size: 0.95rem; }
-        .ai-content h2 { color: #fff; font-weight: 800; font-size: 1.1rem; margin: 1.5rem 0 0.5rem 0; text-transform: uppercase; letter-spacing: 0.1em; }
-        .ai-content table { width: 100%; border-radius: 12px; overflow: hidden; margin: 20px 0; border: 1px solid #18181b; }
-        .ai-content th { background: #121214; padding: 14px; text-align: left; font-size: 0.7rem; color: #71717a; border-bottom: 1px solid #18181b; }
-        .ai-content td { padding: 14px; border-bottom: 1px solid #0f0f11; color: #d4d4d8; font-size: 0.85rem; }
-        .scan-line { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, #3f3f46, transparent); position: absolute; top: 0; animation: scan 3s infinite linear; }
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        body { background-color: #131314; font-family: 'Google Sans', sans-serif; color: #e3e3e3; }
+        #logs { scroll-behavior: smooth; }
+        .ai-content { line-height: 1.6; font-size: 15px; color: #e3e3e3; }
+        .ai-content table { width: 100%; border-collapse: collapse; margin: 12px 0; background: #1e1f20; border-radius: 8px; overflow: hidden; }
+        .ai-content th { background: #333537; padding: 10px; text-align: left; font-size: 12px; }
+        .ai-content td { padding: 10px; border-top: 1px solid #444746; }
+        .user-msg { background: #2b2d31; padding: 12px 20px; border-radius: 24px; max-width: 85%; align-self: flex-end; }
+        .plus-menu { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(10px); opacity: 0; pointer-events: none; }
+        .plus-menu.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .input-container { background: #1e1f20; border-radius: 28px; transition: background 0.2s; }
+        .input-container:focus-within { background: #282a2d; }
+        textarea::placeholder { color: #8e918f; }
+        .dot-pulse { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
     </style>
 </head>
-<body class="h-[100dvh] flex flex-col max-w-2xl mx-auto">
-    <header class="p-8 flex justify-between items-center border-b border-white/5">
-        <div>
-            <h1 class="text-sm font-black tracking-[0.4em] uppercase text-white">Projeto Ayza</h1>
-            <p class="text-[9px] text-zinc-600 mt-1 tracking-widest uppercase">Gov-Intelligence Node</p>
+<body class="h-[100dvh] flex flex-col max-w-3xl mx-auto">
+    
+    <header class="p-5 flex justify-between items-center">
+        <div class="flex flex-col">
+            <h1 class="text-xl font-medium text-[#e3e3e3]">Projeto Ayza</h1>
+            <span class="text-[10px] text-[#8e918f] font-medium uppercase tracking-[0.2em]">Gov-Intelligence Node</span>
         </div>
-        <div class="flex items-center gap-3">
-            <span class="text-[9px] font-mono text-zinc-500">SECURE LINK</span>
-            <div class="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]"></div>
-        </div>
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 shadow-lg"></div>
     </header>
 
-    <main class="flex-1 flex flex-col min-h-0 px-8">
-        <div id="logs" class="flex-1 overflow-y-auto space-y-10 py-8 no-scrollbar">
-            <div class="text-center opacity-30 text-[10px] tracking-[0.5em] py-20">Aguardando Input do Operador</div>
-        </div>
-
-        <div class="pb-10">
-            <div class="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
-                <button onclick="enviarChat('Gerar relatório de inteligência atual')" class="glass-card px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest hover:text-white transition">Relatório</button>
-                <button onclick="gerarNumeroVirtual()" class="glass-card px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest text-blue-400">Interceptar SMS</button>
-                <button onclick="enviarChat('Protocolo de busca GOV.BR')" class="glass-card px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest text-zinc-500">GOV Search</button>
-            </div>
-            
-            <div class="relative glass-card p-2 rounded-2xl border-white/10 group focus-within:border-white/20 transition-all shadow-2xl">
-                <div class="flex gap-3 items-center">
-                    <textarea id="chatInput" rows="1" placeholder="Digite aqui." 
-                       class="flex-1 bg-transparent p-3 text-zinc-200 focus:outline-none resize-none text-sm leading-relaxed"
-                       oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
-                    <button onclick="enviarChat()" class="bg-white text-black h-11 w-11 flex items-center justify-center rounded-xl hover:scale-95 active:scale-90 transition shadow-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
-                    </button>
-                </div>
-            </div>
+    <main class="flex-1 overflow-y-auto px-4 space-y-8 no-scrollbar flex flex-col" id="logs">
+        <div class="mt-20 text-center space-y-4">
+            <h2 class="text-3xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-red-400">Olá, Carlos</h2>
+            <p class="text-[#c4c7c5] text-lg">Como posso ajudar você hoje?</p>
         </div>
     </main>
+
+    <footer class="p-4 pb-8 relative">
+        <div id="plusMenu" class="plus-menu absolute bottom-24 left-4 w-48 glass shadow-2xl rounded-2xl border border-white/10 p-2 bg-[#1e1f20] z-50">
+            <button onclick="enviarChat('Gerar Relatório completo')" class="w-full text-left p-3 hover:bg-[#333537] rounded-xl text-sm flex items-center gap-3">
+                <span>📊</span> Relatório
+            </button>
+            <button onclick="enviarChat('Iniciar buscas avançadas')" class="w-full text-left p-3 hover:bg-[#333537] rounded-xl text-sm flex items-center gap-3">
+                <span>🔍</span> Buscas
+            </button>
+            <button onclick="window.print()" class="w-full text-left p-3 hover:bg-[#333537] rounded-xl text-sm flex items-center gap-3">
+                <span>📄</span> Exportar
+            </button>
+        </div>
+
+        <div class="input-container flex items-end p-2 px-4 gap-2">
+            <button onclick="togglePlusMenu()" class="p-2 text-[#e3e3e3] hover:bg-[#333537] rounded-full transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+
+            <textarea id="chatInput" rows="1" placeholder="Digite aqui." 
+               class="flex-1 bg-transparent py-3 text-base text-[#e3e3e3] focus:outline-none resize-none no-scrollbar"
+               oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
+
+            <button onclick="enviarChat()" class="p-2 text-[#e3e3e3] hover:bg-[#333537] rounded-full transition" id="sendBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+            </button>
+        </div>
+        <p class="text-[10px] text-[#8e918f] text-center mt-3 px-4">A AYZA pode exibir informações imprecisas, inclusive sobre pessoas. Por isso, cheque as respostas.</p>
+    </footer>
 
     <script>
         const logsDiv = document.getElementById('logs');
         const chatInput = document.getElementById('chatInput');
+        const plusMenu = document.getElementById('plusMenu');
+
+        function togglePlusMenu() {
+            plusMenu.classList.toggle('active');
+        }
 
         function addLog(msg, role) {
-            const div = document.createElement('div');
-            div.className = role === 'YOU' ? 'flex flex-col items-end' : 'flex flex-col items-start relative';
-            const inner = document.createElement('div');
-            inner.className = role === 'YOU' ? 'bg-zinc-900/50 px-5 py-3 rounded-2xl max-w-[80%] text-[13px] text-zinc-400 border border-white/5' : 'ai-content w-full opacity-0 translate-y-2 animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-forwards';
+            const container = document.createElement('div');
+            container.className = role === 'YOU' ? 'flex flex-col' : 'flex flex-col mb-10';
             
-            if(role === 'AYZA') {
-                inner.innerHTML = `<span class="text-[8px] font-black text-zinc-600 block mb-4 uppercase tracking-[0.3em]">Neural Intel Response</span>` + marked.parse(msg);
+            const content = document.createElement('div');
+            if(role === 'YOU') {
+                content.className = 'user-msg';
+                content.innerText = msg;
             } else {
-                inner.innerText = msg;
+                content.className = 'ai-content w-full py-4 px-2';
+                content.innerHTML = `<div class="flex items-center gap-2 mb-4">
+                    <div class="w-6 h-6 rounded-full bg-blue-500"></div>
+                    <span class="font-medium text-sm">AYZA</span>
+                </div>` + marked.parse(msg);
             }
             
-            div.appendChild(inner);
-            logsDiv.appendChild(div);
+            container.appendChild(content);
+            logsDiv.appendChild(container);
             logsDiv.scrollTo({ top: logsDiv.scrollHeight, behavior: 'smooth' });
         }
 
         async function enviarChat(forced = null) {
-            const t = forced || chatInput.value.trim();
-            if(!t) return;
+            const text = forced || chatInput.value.trim();
+            if(!text) return;
+            plusMenu.classList.remove('active');
             if(!forced) chatInput.value = '';
             chatInput.style.height = 'auto';
-            addLog(t, 'YOU');
+
+            addLog(text, 'YOU');
+
+            // Feedback de processamento
+            const loading = document.createElement('div');
+            loading.id = 'loading';
+            loading.className = 'text-sm text-zinc-500 dot-pulse italic p-4';
+            loading.innerText = 'AYZA está pensando...';
+            logsDiv.appendChild(loading);
+
             try {
                 const r = await fetch('/chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: t})
+                    body: JSON.stringify({message: text})
                 });
                 const d = await r.json();
+                document.getElementById('loading').remove();
                 addLog(d.reply, 'AYZA');
-            } catch(e) { addLog("_Falha crítica na rede neural._", 'AYZA'); }
-        }
-
-        async function gerarNumeroVirtual() {
-            const r = await fetch('/gerar_numero');
-            const d = await r.json();
-            addLog(`Solicitando gateway temporário em **${d.numero}**... Protocolo de escuta ativado.`, "AYZA");
+            } catch(e) { 
+                if(document.getElementById('loading')) document.getElementById('loading').remove();
+                addLog("Desculpe, ocorreu um erro na conexão.", 'AYZA'); 
+            }
         }
 
         chatInput.addEventListener('keydown', e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarChat(); } });
