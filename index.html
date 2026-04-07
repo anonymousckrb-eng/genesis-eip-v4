@@ -2,56 +2,85 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PROJETO AYZA</title>
+    <title>AYZA Intelligence</title>
     <style>
-        body { background: #01050a; color: #00f2ff; font-family: monospace; display: flex; justify-content: center; padding: 20px; }
-        .container { width: 100%; max-width: 600px; }
-        .card { background: rgba(0, 242, 255, 0.03); border: 1px solid #00414d; padding: 20px; border-radius: 10px; }
-        input { width: 100%; background: #000; border: 1px solid #00414d; color: #00f2ff; padding: 12px; margin-bottom: 10px; box-sizing: border-box; }
-        button { background: transparent; color: #00f2ff; border: 1px solid #00f2ff; padding: 10px; cursor: pointer; width: 48%; margin: 1%; font-weight: bold; }
-        button:hover { background: #00f2ff; color: #000; }
-        .full-btn { width: 98%; background: #00f2ff; color: #000; margin-top: 5px; }
-        #output { margin-top: 20px; padding: 15px; border: 1px solid #00414d; background: rgba(0,0,0,0.8); white-space: pre-wrap; min-height: 100px; }
+        body { margin:0; display:flex; background:#01050a; color:#00f2ff; font-family:monospace; height:100-vh; }
+        .sidebar { width:200px; background:#000810; padding:20px; border-right:1px solid #00414d; display:flex; flex-direction:column; gap:10px; }
+        .main { flex:1; padding:30px; display:flex; flex-direction:column; gap:20px; }
+        .card { background:rgba(0,242,255,0.02); border:1px solid #00414d; padding:20px; border-radius:8px; }
+        button { background:transparent; color:#00f2ff; border:1px solid #00f2ff; padding:10px; cursor:pointer; font-weight:bold; }
+        button:hover { background:#00f2ff; color:#000; box-shadow:0 0 15px #00f2ff; }
+        #output { border:1px solid #00414d; padding:15px; min-height:100px; background:#000; white-space:pre-wrap; }
+        #logs { border:1px solid #1a1a1a; height:150px; overflow-y:auto; padding:10px; font-size:11px; color:#555; background:#000; }
+        .pulse { animation: p 1.5s infinite; color: #ff00ea; }
+        @keyframes p { 0% {opacity:1} 50% {opacity:0.3} 100% {opacity:1} }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 style="text-align:center; letter-spacing: 5px;">PROJETO AYZA</h1>
+    <div class="sidebar">
+        <h2 style="letter-spacing:3px">AYZA V2</h2>
+        <button onclick="gerarNumero()">GERAR NÚMERO</button>
+        <button onclick="document.getElementById('chat-box').scrollIntoView()">CHAT TÁTICO</button>
+    </div>
+    <div class="main">
         <div class="card">
-            <input type="text" id="target" placeholder="Comando ou Alvo...">
-            <button onclick="send()">ENVIAR CHAT</button>
-            <button onclick="getSMS()">GERAR NÚMERO</button>
-            <div id="output">// AGUARDANDO COMANDOS...</div>
+            <h3>NÚCLEO DE SMS</h3>
+            <div id="output">// SISTEMA AGUARDANDO...</div>
         </div>
+        <div class="card" id="chat-box">
+            <input type="text" id="msg" style="width:70%; background:#000; border:1px solid #00414d; color:#fff; padding:10px;" placeholder="Enviar comando...">
+            <button onclick="sendChat()">EXECUTAR</button>
+        </div>
+        <div id="logs"></div>
     </div>
     <script>
-        const API_URL = "https://genese-v4.onrender.com"; // COLOQUE SUA URL DO RENDER AQUI
+        const API = "https://genesis-eip-v4.onrender.com/;
+        let nAtual = null;
+        let poll = null;
 
-        async function send() {
-            const val = document.getElementById('target').value;
-            const out = document.getElementById('output');
-            if(!val) return;
-            out.innerText = "// PROCESSANDO...";
-            try {
-                const res = await fetch(API_URL + '/chat', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: val})
-                });
-                const data = await res.json();
-                out.innerText = data.response || data.error;
-            } catch (e) { out.innerText = "// ERRO DE CONEXÃO."; }
+        function log(m) {
+            const l = document.getElementById("logs");
+            l.innerHTML += `[${new Date().toLocaleTimeString()}] ${m}<br>`;
+            l.scrollTop = l.scrollHeight;
         }
 
-        async function getSMS() {
-            const out = document.getElementById('output');
-            out.innerText = "// SOLICITANDO NÚMERO VIRTUAL...";
-            try {
-                const res = await fetch(API_URL + '/gerar_sms');
-                const data = await res.json();
-                out.innerText = "=== NÚMERO GERADO ===\nNúmero: " + data.numero + "\nStatus: " + data.status;
-            } catch (e) { out.innerText = "// FALHA NO MÓDULO SMS."; }
+        async function gerarNumero() {
+            log("Iniciando varredura de servidores públicos...");
+            const r = await fetch(API + "/gerar_numero");
+            const d = await r.json();
+            if(d.numero) {
+                nAtual = d.numero;
+                document.getElementById("output").innerText = "NÚMERO ATIVO: " + nAtual;
+                log("Sucesso: " + nAtual);
+                iniciarPolling();
+            }
+        }
+
+        function iniciarPolling() {
+            if(poll) clearInterval(poll);
+            poll = setInterval(async () => {
+                log("Monitorando tráfego de entrada...");
+                document.getElementById("output").innerHTML = `${nAtual}<br><span class="pulse">AGUARDANDO SMS...</span>`;
+                const r = await fetch(API + "/checar_sms/" + nAtual);
+                const d = await r.json();
+                if(d.codigo) {
+                    log("CAPTURA REALIZADA!");
+                    document.getElementById("output").innerText = "CÓDIGO: " + d.codigo;
+                    clearInterval(poll);
+                }
+            }, 10000);
+        }
+
+        async function sendChat() {
+            const m = document.getElementById("msg").value;
+            log("Enviando query para o núcleo Groq...");
+            const r = await fetch(API + "/chat", {
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body: JSON.stringify({message: m})
+            });
+            const d = await r.json();
+            document.getElementById("output").innerText = d.response;
         }
     </script>
 </body>
