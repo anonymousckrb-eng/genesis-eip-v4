@@ -1,20 +1,17 @@
 import os
 from flask import Flask, request, jsonify, send_from_directory
-import google.generativeai as genai
+from google import genai
 
 app = Flask(__name__, static_folder='.')
 
-# Captura a chave que já vimos que está configurada no seu Render
+# Captura a chave que já está no seu painel
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    # Mudança tática: Usando apenas o nome do modelo sem prefixos
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    model_id = "gemini-1.5-flash"
 else:
-    model = None
-
-chat_sessions = {}
+    client = None
 
 @app.route('/')
 def index():
@@ -22,19 +19,20 @@ def index():
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    if not client:
+        return jsonify({"response": "ERRO: Chave API não detectada no Render."}), 500
+    
     try:
         data = request.get_json()
         msg = data.get('message', '').strip()
-        user_id = request.remote_addr
-
-        if not msg: return jsonify({"response": "SISTEMA: Aguardando entrada."})
-        if not model: return jsonify({"response": "ERRO: Chave API não detectada no Render."}), 500
-
-        if user_id not in chat_sessions:
-            chat_sessions[user_id] = model.start_chat(history=[])
-
-        # O segredo é deixar a biblioteca gerenciar a versão da API sozinha
-        response = chat_sessions[user_id].send_message(msg)
+        
+        # Resposta direta e tática
+        response = client.models.generate_content(
+            model=model_id,
+            contents=msg,
+            config={'system_instruction': 'Você é AYZA, uma inteligência artificial tática e eficiente.'}
+        )
+        
         return jsonify({"response": response.text})
     except Exception as e:
         return jsonify({"response": f"FALHA NA REDE NEURAL: {str(e)}"}), 500
