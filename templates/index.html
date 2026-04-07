@@ -1,35 +1,125 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>AYZA Intelligence</title>
-
-<style>
-body { background:black; color:#00f2ff; font-family:monospace; }
-button { background:black; color:#00f2ff; border:1px solid #00f2ff; padding:10px; cursor:pointer; }
-#output { margin-top:20px; border:1px solid #00f2ff; padding:10px; }
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJETO AYZA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            background-color: #020617; 
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .neon-border { 
+            border: 1px solid #06b6d4; 
+            box-shadow: 0 0 10px #06b6d4, inset 0 0 5px #06b6d4; 
+        }
+        .neon-button {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+            transition: all 0.3s ease;
+        }
+        .neon-button:hover {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.8);
+            background-color: #06b6d4;
+            color: #020617;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 4px; }
+    </style>
 </head>
-<body>
+<body class="text-white h-screen flex flex-col items-center p-6">
+    
+    <h1 class="text-5xl md:text-6xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-10 tracking-widest text-center mt-4">
+        PROJETO AYZA
+    </h1>
 
-<h1>AYZA INTELLIGENCE</h1>
+    <div class="flex flex-wrap justify-center gap-4 mb-8 w-full max-w-4xl">
+        <button onclick="registrarLog('Iniciando Varredura...', 'info')" class="neon-button px-6 py-3 rounded-full border border-cyan-500 text-cyan-400 font-bold uppercase tracking-wider">
+            VARREDURA
+        </button>
+        <button onclick="registrarLog('Modo de Conversação Ativado.', 'info')" class="neon-button px-6 py-3 rounded-full border border-cyan-500 text-cyan-400 font-bold uppercase tracking-wider">
+            CONVERSAR
+        </button>
+        <button onclick="gerarSms()" class="neon-button px-6 py-3 rounded-full border border-cyan-500 text-cyan-400 font-bold uppercase tracking-wider">
+            GERAR SMS
+        </button>
+    </div>
 
-<button onclick="gerarNumero()">GERAR NÚMERO</button>
+    <div class="w-full max-w-4xl flex-1 flex flex-col gap-4 min-h-0">
+        
+        <div class="flex w-full">
+            <input type="text" id="chatInput" placeholder="Digite seu comando para a AYZA..." 
+                   class="flex-1 bg-[#0f172a] border border-cyan-500 rounded-l-lg p-4 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]"
+                   onkeypress="if(event.key === 'Enter') enviarChat()">
+            <button onclick="enviarChat()" class="bg-cyan-600 text-white px-8 rounded-r-lg font-bold hover:bg-cyan-500 transition shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                ENVIAR
+            </button>
+        </div>
 
-<div id="output"></div>
+        <div class="w-full text-left font-bold text-sm text-cyan-500 tracking-widest mt-2 uppercase">TERMINAL DE LOGS:</div>
+        <div id="logs" class="flex-1 neon-border rounded-lg p-5 overflow-y-auto bg-black/60 text-sm md:text-base break-words">
+            <div class="text-cyan-600 mb-2">> Sistema AYZA inicializado com sucesso. Aguardando comandos...</div>
+        </div>
+    </div>
 
-<script>
-const API = window.location.origin;
+    <script>
+        const logsDiv = document.getElementById('logs');
+        const chatInput = document.getElementById('chatInput');
 
-async function gerarNumero(){
-    const r = await fetch(API + "/gerar_numero");
-    const data = await r.json();
+        function registrarLog(mensagem, tipo = 'info') {
+            let cor = 'text-cyan-400';
+            if (tipo === 'erro') cor = 'text-red-500';
+            if (tipo === 'user') cor = 'text-green-400';
+            
+            logsDiv.innerHTML += `<div class="mb-3 ${cor}">> ${mensagem}</div>`;
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
 
-    document.getElementById("output").innerText =
-        data.numero || JSON.stringify(data);
-}
-</script>
+        async function enviarChat() {
+            const mensagem = chatInput.value.trim();
+            if (!mensagem) {
+                registrarLog("Aviso: Não é possível enviar uma mensagem vazia.", "erro");
+                return;
+            }
 
+            registrarLog(`Você: ${mensagem}`, 'user');
+            chatInput.value = '';
+            chatInput.disabled = true;
+
+            try {
+                registrarLog("AYZA está processando...", "info");
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: mensagem })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    registrarLog(`AYZA: ${data.reply}`);
+                } else {
+                    registrarLog(`ERRO 400 (Groq): ${JSON.stringify(data.details || data.error)}`, 'erro');
+                }
+            } catch (erro) {
+                registrarLog(`Falha de Conexão: ${erro.message}`, 'erro');
+            } finally {
+                chatInput.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        async function gerarSms() {
+            registrarLog('Solicitando geração de número para SMS...', 'info');
+            try {
+                const response = await fetch('/gerar_numero');
+                const data = await response.json();
+                registrarLog(`Resposta SMS: ${JSON.stringify(data)}`);
+            } catch (erro) {
+                registrarLog(`Erro ao contatar Scraper de SMS: ${erro.message}`, 'erro');
+            }
+        }
+    </script>
 </body>
 </html>
