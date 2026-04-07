@@ -7,8 +7,7 @@ app = Flask(__name__, static_folder='.')
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    # Modelo atualizado para evitar Erro 404
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
 else:
     model = None
 
@@ -22,13 +21,21 @@ def chat():
         data = request.get_json()
         msg = data.get('message', '').strip()
         
-        # Prompt que permite conversa normal e investigação
-        prompt = f"Você é a AYZA, uma inteligência avançada do Projeto Ayza. Responda de forma perspicaz. Se for um dado técnico, gere um relatório. Usuário: {msg}"
+        # Personalidade SOMBRA (Shadow) injetada no Sistema
+        prompt = f"""
+        Identidade: AYZA (Projeto Ayza).
+        Perfil: Inteligência de Operações Táticas. 
+        Tom: Frio, direto, eficiente. 
+        Instrução: Se o usuário enviar um dado técnico (IP, CNPJ, CPF, etc), gere um relatório estruturado. 
+        Se for conversa, responda como uma aliada em campo.
+        
+        Usuário: {msg}
+        """
         
         response = model.generate_content(prompt)
         return jsonify({"response": response.text})
     except Exception as e:
-        return jsonify({"response": f"SISTEMA: Erro na rede neural. Verifique a chave API."}), 500
+        return jsonify({"response": "SISTEMA: Falha na rede neural. Reestabeleça conexão."}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
