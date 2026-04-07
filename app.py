@@ -1,5 +1,4 @@
-import os
-import requests
+import os, requests
 from flask import Flask, request, jsonify, send_from_directory
 
 app = Flask(__name__, static_folder='.')
@@ -10,42 +9,29 @@ def index():
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    # Integração com a Inteligência Groq para respostas organizadas
-    api_key = os.environ.get("GROQ_API_KEY")
-    user_msg = request.json.get("message")
+    key = os.environ.get("GROQ_API_KEY")
+    msg = request.json.get("message")
     
-    if not api_key:
-        return jsonify({"response": "ERRO: GROQ_API_KEY não configurada."}), 500
+    if not key:
+        return jsonify({"response": "ERRO: GROQ_API_KEY ausente."}), 500
 
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    
-    # Prompt de sistema para garantir o formato de relatório tático
     payload = {
         "model": "llama3-8b-8192",
         "messages": [
-            {
-                "role": "system", 
-                "content": "Você é a AYZA. Responda sempre no formato: // GROQ_INTELLIGENCE_REPORT. Use negrito, tópicos e uma linguagem técnica de inteligência tática."
-            },
-            {"role": "user", "content": user_msg}
+            {"role": "system", "content": "Você é a AYZA. Responda como um // GROQ_INTELLIGENCE_REPORT tático."},
+            {"role": "user", "content": msg}
         ]
     }
     
     try:
-        res = requests.post(url, json=payload, headers=headers, timeout=15)
-        if res.status_code == 200:
-            data = res.json()
-            return jsonify({"response": data['choices'][0]['message']['content']})
-        else:
-            return jsonify({"response": f"Falha no Núcleo Groq: {res.status_code}"}), 500
-    except Exception as e:
-        return jsonify({"response": f"Erro de Conexão: {str(e)}"}), 500
+        r = requests.post("https://api.groq.com/openai/v1/chat/completions", 
+                         json=payload, 
+                         headers={"Authorization": f"Bearer {key}"}, 
+                         timeout=15)
+        return jsonify({"response": r.json()['choices'][0]['message']['content']})
+    except:
+        return jsonify({"response": "Erro na rede neural Groq."}), 500
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
