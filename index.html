@@ -5,70 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PROJETO AYZA</title>
     <style>
-        body { background: #01050a; color: #00f2ff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .container { width: 100%; max-width: 500px; }
-        .header { border-bottom: 2px solid #00f2ff; padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
-        h1 { font-size: 22px; text-transform: uppercase; letter-spacing: 4px; text-shadow: 0 0 10px #00f2ff; margin: 10px 0; }
-        .card { background: rgba(0, 242, 255, 0.03); border: 1px solid #00414d; padding: 20px; border-radius: 15px; box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.05); }
-        input { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid #00414d; color: #fff; padding: 12px; border-radius: 8px; margin-bottom: 15px; box-sizing: border-box; outline: none; }
-        input:focus { border-color: #00f2ff; box-shadow: 0 0 10px rgba(0, 242, 255, 0.2); }
-        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        button { flex: 1; background: transparent; color: #00f2ff; border: 1px solid #00414d; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; text-transform: uppercase; font-size: 12px; }
-        button:hover { background: #00f2ff; color: #000; box-shadow: 0 0 20px #00f2ff; }
-        .main-btn { width: 100%; background: #00f2ff; color: #000; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        #output { margin-top: 25px; padding: 15px; border-radius: 10px; background: rgba(0, 242, 255, 0.05); border-left: 4px solid #00f2ff; min-height: 50px; white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #e0faff; }
+        body { background: #01050a; color: #00f2ff; font-family: monospace; display: flex; justify-content: center; padding: 20px; }
+        .container { width: 100%; max-width: 600px; }
+        .card { background: rgba(0, 242, 255, 0.03); border: 1px solid #00414d; padding: 20px; border-radius: 10px; }
+        input { width: 100%; background: #000; border: 1px solid #00414d; color: #00f2ff; padding: 12px; margin-bottom: 10px; box-sizing: border-box; }
+        button { background: transparent; color: #00f2ff; border: 1px solid #00f2ff; padding: 10px; cursor: pointer; width: 48%; margin: 1%; font-weight: bold; }
+        button:hover { background: #00f2ff; color: #000; }
+        .full-btn { width: 98%; background: #00f2ff; color: #000; margin-top: 5px; }
+        #output { margin-top: 20px; padding: 15px; border: 1px solid #00414d; background: rgba(0,0,0,0.8); white-space: pre-wrap; min-height: 100px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>PROJETO AYZA</h1>
-            <small style="color: #008891;">STATUS: ENCRYPTED // CORE: ACTIVE</small>
-        </div>
+        <h1 style="text-align:center; letter-spacing: 5px;">PROJETO AYZA</h1>
         <div class="card">
-            <input type="text" id="target" placeholder="Fale com Ayza ou insira um alvo..." onkeypress="if(event.key==='Enter') send()">
-            <div class="btn-group">
-                <button onclick="send()">VARREDURA</button>
-                <button onclick="send()">CONVERSAR</button>
-            </div>
-            <button class="main-btn" onclick="send()">EXECUTAR COMANDO</button>
+            <input type="text" id="target" placeholder="Comando ou Alvo...">
+            <button onclick="send()">ENVIAR CHAT</button>
+            <button onclick="getSMS()">GERAR NÚMERO</button>
+            <div id="output">// AGUARDANDO COMANDOS...</div>
         </div>
-        <div id="output">// SISTEMA AGUARDANDO INTERAÇÃO...</div>
     </div>
-
     <script>
+        const API_URL = "https://genese-v4.onrender.com"; // COLOQUE SUA URL DO RENDER AQUI
+
         async function send() {
-            const inputField = document.getElementById('target');
-            const val = inputField.value.trim();
+            const val = document.getElementById('target').value;
             const out = document.getElementById('output');
-            
             if(!val) return;
-
-            out.innerText = "// AYZA ESTÁ PROCESSANDO DADOS...";
-            inputField.value = ""; // Limpa o campo após enviar
-
+            out.innerText = "// PROCESSANDO...";
             try {
-                const res = await fetch('/chat', {
+                const res = await fetch(API_URL + '/chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({message: val})
                 });
-
                 const data = await res.json();
-                
-                // GARANTIA ANTI-UNDEFINED:
-                // Tenta pegar data.response, se não existir, tenta data.error, 
-                // se nada funcionar, avisa erro de núcleo.
-                const finalResponse = data.response || data.error || "// ERRO: NÚCLEO DE DADOS INDISPONÍVEL.";
-                
-                out.innerText = finalResponse;
+                out.innerText = data.response || data.error;
+            } catch (e) { out.innerText = "// ERRO DE CONEXÃO."; }
+        }
 
-            } catch (e) { 
-                out.innerText = "// FALHA CRÍTICA NA TRANSMISSÃO: Verifique sua conexão ou API Key."; 
-                console.error(e);
-            }
+        async function getSMS() {
+            const out = document.getElementById('output');
+            out.innerText = "// SOLICITANDO NÚMERO VIRTUAL...";
+            try {
+                const res = await fetch(API_URL + '/gerar_sms');
+                const data = await res.json();
+                out.innerText = "=== NÚMERO GERADO ===\nNúmero: " + data.numero + "\nStatus: " + data.status;
+            } catch (e) { out.innerText = "// FALHA NO MÓDULO SMS."; }
         }
     </script>
 </body>
 </html>
-

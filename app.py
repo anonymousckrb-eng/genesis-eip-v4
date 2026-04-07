@@ -1,70 +1,59 @@
-import os
+from flask import Flask, request, jsonify
 import requests
-from flask import Flask, request, jsonify, send_from_directory
+import os
+from flask_cors import CORS
 
-# ==================== CONFIGURAÇÃO PRINCIPAL ====================
-# Definimos static_folder='.' para ele achar o index.html na raiz
-app = Flask(__name__, static_folder='.') 
+app = Flask(__name__)
+CORS(app)
 
-# Chave da Groq vinda do ambiente (configurada no Render)
-GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+SYSTEM_PROMPT = "Você é uma IA de inteligência tática avançada chamada AYZA. Responda de forma direta, objetiva e técnica."
 
-SYSTEM_PROMPT = """Você é AYZA Intelligence, o núcleo tático de inteligência artificial do dashboard AYZA.
+@app.route("/")
+def home():
+    return "PROJETO AYZA ONLINE"
 
-REGRAS OBRIGATÓRIAS:
-1. Toda resposta DEVE começar EXATAMENTE com: // GROQ_INTELLIGENCE_REPORT
-2. Use tom de relatório tático militar/estratégico: claro, conciso e organizado.
-3. Estruture com seções e bullet points.
-4. Responda exclusivamente em português (Brasil)."""
-
-# ==================== ROTAS ====================
-
-@app.route('/')
-def index():
-    """Serve o arquivo index.html direto da raiz do projeto"""
-    return send_from_directory('.', 'index.html')
-
-@app.route('/chat', methods=['POST'])
+@app.route("/chat", methods=["POST"])
 def chat():
-    """Endpoint que processa mensagens e consulta a Groq API"""
-    if not GROQ_API_KEY:
-        return jsonify({"error": "GROQ_API_KEY não configurada no Render."}), 500
-
-    data = request.get_json(silent=True)
-    if not data or 'message' not in data:
-        return jsonify({"error": "Mensagem vazia."}), 400
-
-    user_message = data['message']
-
-    # Configuração da chamada para Groq
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    payload = {
-        "model": "llama3-70b-8192",
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message}
-        ],
-        "temperature": 0.6
-    }
-
     try:
+        data = request.get_json()
+        user_message = data.get("message", "")
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_message}
+            ],
+            "temperature": 0.6,
+            "max_tokens": 1024
+        }
         response = requests.post(url, headers=headers, json=payload, timeout=30)
-        response.raise_for_status()
+        if response.status_code != 200:
+            return jsonify({"error": f"Erro Groq: {response.status_code}", "details": response.text}), 500
         
-        groq_response = response.json()
-        ai_message = groq_response['choices'][0]['message']['content'].strip()
-        
-        return jsonify({"response": ai_message})
-        
+        data = response.json()
+        ai_response = data["choices"][0]["message"]["content"]
+        return jsonify({"response": "// GROQ_INTELLIGENCE_REPORT\n" + ai_response})
     except Exception as e:
-        return jsonify({"error": f"Erro na conexão: {str(e)}"}), 500
+        return jsonify({"error": "Falha interna", "details": str(e)}), 500
 
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+@app.route("/gerar_sms", methods=["GET"])
+def gerar_sms():
+    try:
+        # Estrutura preparada para integração futura com 5SIM ou SMS-Activate
+        mock_data = {
+            "numero": "+55 11 91234-5678",
+            "status": "AGUARDANDO SMS",
+            "mensagens": []
+        }
+        return jsonify(mock_data)
+    except Exception as e:
+        return jsonify({"error": "Erro ao gerar número", "details": str(e)}), 500
 
+if __name__ == "__main__":
+    app.run(debug=True)
