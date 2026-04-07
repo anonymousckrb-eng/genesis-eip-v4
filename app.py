@@ -29,17 +29,19 @@ def chat():
     user_msg = data.get('message', '')
     
     extra_context = ""
-    dados_extraidos = consulta_brasil_api(user_msg)
-    if dados_extraidos:
-        extra_context = f"\n[SISTEMA: Encontrei estes dados reais para a busca: {dados_extraidos}]"
+    dados_api = consulta_brasil_api(user_msg)
+    if dados_api:
+        extra_context = f"\n[DADOS REAIS RECUPERADOS: {dados_api}]"
 
     headers = { "Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json" }
     
     instruction = (
-        "Voce e a AYZA Intelligence. Seu criador e Carlos Kaic. "
-        "Sua personalidade e refinada, tecnica e analitica. "
-        "Se houver dados de API no contexto, interprete-os e apresente-os de forma elegante em tabelas Markdown. "
-        "Seja proativa em cruzar informacoes e explicar detalhes tecnicos."
+        "Você é a AYZA, uma inteligência artificial de elite desenvolvida por Carlos Kaic. "
+        "Sua linguagem deve ser sofisticada, executiva e altamente analítica. "
+        "Não seja apenas cordial; seja brilhante. Se receber dados de CNPJ, não apenas os liste, "
+        "faça uma 'Análise Sugerida' sobre a saúde ou porte da empresa. "
+        "Ao falar com Carlos, mantenha o tom de uma parceira estratégica de alto nível. "
+        "Sempre utilize tabelas ricas e separação por tópicos para facilitar a leitura premium."
     )
 
     payload = {
@@ -48,18 +50,18 @@ def chat():
             {"role": "system", "content": instruction},
             {"role": "user", "content": user_msg + extra_context}
         ],
-        "temperature": 0.6
+        "temperature": 0.5 # Menor temperatura para respostas mais precisas e "sérias"
     }
 
     try:
         res = requests.post(GROQ_URL, headers=headers, json=payload)
         return jsonify({"reply": res.json()['choices'][0]['message']['content']})
     except:
-        return jsonify({"reply": "Erro de processamento neural."}), 500
+        return jsonify({"reply": "*Erro no processamento da Matriz.*"}), 500
 
 @app.route('/gerar_numero')
 def gerar_numero():
-    return jsonify({"numero": f"+55119{random.randint(10000000, 99999999)}"})
+    return jsonify({"numero": f"+55119{random.randint(70000000, 99999999)}"})
 
 @app.route('/checar_sms')
 def checar_sms():
