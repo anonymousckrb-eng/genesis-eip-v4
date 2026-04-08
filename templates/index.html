@@ -6,82 +6,110 @@
     <title>Projeto Ayza</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&display=swap" rel="stylesheet">
     <style>
         body { background-color: #131314; font-family: 'Google Sans', sans-serif; color: #e3e3e3; margin: 0; overflow: hidden; overscroll-behavior-y: none; }
-        .app-container { height: 100dvh; display: flex; flex-direction: column; }
+        .app-container { height: 100dvh; display: flex; flex-direction: column; position: relative; }
         
-        header { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .status-dot { width: 8px; height: 8px; background: #34a853; border-radius: 50%; box-shadow: 0 0 10px #34a853; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        /* Header Gemini Style */
+        header { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); background: #131314; z-index: 40; }
+        .status-dot { width: 8px; height: 8px; background: #34a853; border-radius: 50%; box-shadow: 0 0 8px #34a853; }
 
-        #chat-area { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; scroll-behavior: smooth; }
-        .user-bubble { background: #282a2c; padding: 12px 18px; border-radius: 24px; max-width: 85%; align-self: flex-end; word-break: break-word; font-size: 15px; }
+        /* Sidebar (Drawer) */
+        #sidebar { position: fixed; inset-y: 0; left: 0; width: 280px; background: #0c0c0e; z-index: 100; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; padding: 1rem; border-right: 1px solid rgba(255,255,255,0.05); }
+        #sidebar.open { transform: translateX(0); }
+        #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 90; opacity: 0; transition: opacity 0.3s ease; backdrop-filter: blur(2px); }
+        #sidebar-overlay.open { display: block; opacity: 1; }
+        .new-chat-btn { background: #1e1f20; color: #e3e3e3; padding: 12px; rounded: 24px; display: flex; align-items: center; gap: 12px; font-weight: 500; font-size: 14px; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.05); transition: 0.2s; }
+        .new-chat-btn:hover { background: #282a2c; }
+
+        /* Chat Area & Fixes */
+        #chat-area { flex: 1; overflow-y: auto; padding: 1rem 1.5rem 2rem; display: flex; flex-direction: column; gap: 2rem; scroll-behavior: smooth; }
+        .user-bubble { background: #282a2c; padding: 14px 20px; border-radius: 24px; max-width: 85%; align-self: flex-end; word-break: break-word; font-size: 15px; }
         .ai-response { width: 100%; word-break: break-word; line-height: 1.6; font-size: 15px; }
         
-        /* Estilização para o Dossiê */
-        .ai-response ul { list-style-type: none; padding-left: 0; }
-        .ai-response p { margin-bottom: 0.8rem; }
-        .ai-response strong { color: #a8c7fa; } /* Destaque azul claro nas chaves do dossiê */
+        /* Fix Definitivo para Tabelas OSINT */
+        .table-container { width: 100%; overflow-x: auto; margin: 1rem 0; border-radius: 8px; background: #1e1f20; border: 1px solid rgba(255,255,255,0.05); }
+        table { width: 100%; min-width: 500px; border-collapse: collapse; font-size: 0.85rem; }
+        th { text-align: left; padding: 12px; border-bottom: 1px solid #444746; color: #8e918f; font-weight: 500; }
+        td { padding: 12px; border-bottom: 1px solid #282a2c; color: #d4d4d8; }
 
-        .input-wrapper { padding: 0.5rem 1rem 1.5rem; background: #131314; }
-        .input-box { background: #1e1f20; border-radius: 32px; display: flex; align-items: flex-end; padding: 0.5rem; gap: 0.5rem; border: 1px solid transparent; transition: 0.3s; }
-        .input-box:focus-within { background: #282a2c; border-color: rgba(255,255,255,0.1); }
-        textarea { background: transparent; border: none; color: #e3e3e3; flex: 1; padding: 0.8rem 0.5rem; resize: none; outline: none; font-size: 1rem; max-height: 150px; }
-        
-        /* Menu Deslizante */
-        #bottom-sheet-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; opacity: 0; transition: opacity 0.3s ease; backdrop-filter: blur(2px); }
-        #bottom-sheet { 
-            position: fixed; bottom: -100%; left: 0; right: 0; background: #1e1f20; 
-            border-radius: 24px 24px 0 0; padding: 1.5rem; z-index: 1000; 
-            transition: bottom 0.3s cubic-bezier(0.1, 0.8, 0.2, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.05);
+        /* Input Bar Gemini Style */
+        .input-wrapper { padding: 0.5rem 1rem 1.5rem; bg: #131314; }
+        .input-box { background: #1e1f20; border-radius: 32px; display: flex; align-items: flex-end; padding: 0.25rem 0.75rem; gap: 0.25rem; transition: background 0.2s; }
+        .input-box:focus-within { background: #282a2c; }
+        textarea { background: transparent; border: none; color: #e3e3e3; flex: 1; padding: 1rem 0.5rem; resize: none; outline: none; font-size: 1rem; max-height: 180px; font-family: 'Roboto', sans-serif; }
+        textarea::placeholder { color: #8e918f; }
+
+        /* Plus Menu (Glassmorphism) */
+        #plus-menu { 
+            display: none; position: absolute; bottom: 100px; left: 1.5rem; 
+            background: rgba(40, 42, 44, 0.9); backdrop-filter: blur(10px); border-radius: 20px;
+            width: 240px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 50;
+            border: 1px solid rgba(255,255,255,0.08); transform: translateY(10px); opacity: 0; transition: all 0.3s ease;
         }
-        .sheet-handle { width: 40px; height: 4px; background: #5f6368; border-radius: 2px; margin: 0 auto 1.5rem; }
-        .sheet-item { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: 16px; cursor: pointer; transition: background 0.2s; font-size: 1rem; color: #e3e3e3; }
-        .sheet-item:hover { background: #282a2c; }
+        #plus-menu.open { display: block; transform: translateY(0); opacity: 1; }
+        .menu-item { padding: 1rem; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: 0.2s; font-size: 15px; font-weight: 500; color: #e3e3e3; }
+        .menu-item:hover { background: rgba(255,255,255,0.05); border-radius: 20px; }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
     <div class="app-container">
+        <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+        <aside id="sidebar">
+            <button class="new-chat-btn" onclick="newChat()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nova conversa
+            </button>
+            <div class="flex-1 overflow-y-auto no-scrollbar space-y-3">
+                <p class="text-[11px] text-zinc-600 font-bold uppercase tracking-widest px-3">Histórico (Static)</p>
+                <div class="text-sm text-zinc-400 px-3 hover:text-white cursor-pointer truncate py-1">Consulta CNPJ Exemplo</div>
+            </div>
+        </aside>
+
         <header>
-            <h1 class="text-[1.35rem] font-medium tracking-wide">Projeto Ayza</h1>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="p-2 -ml-2 text-zinc-400 hover:text-white rounded-full active:bg-white/10">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <h1 class="text-xl font-normal text-[#e3e3e3]">Projeto Ayza</h1>
+            </div>
             <div class="flex items-center gap-2">
-                <span class="text-[10px] text-zinc-400 font-bold tracking-[0.15em]">SISTEMA ATIVO</span>
                 <div class="status-dot"></div>
             </div>
         </header>
 
         <main id="chat-area" class="no-scrollbar">
-            <div class="mt-20 text-center flex flex-col items-center opacity-80">
-                <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 mb-6 shadow-[0_0_30px_rgba(37,99,235,0.3)]"></div>
-                <h2 class="text-3xl font-medium text-zinc-200 mb-2">Olá, Criador</h2>
-                <p class="text-zinc-400 text-sm">Como posso potencializar suas buscas hoje?</p>
+            <div id="welcome-screen" class="mt-24 text-center flex flex-col items-center">
+                <h2 class="text-4xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-[#4285F4] via-[#9B72CB] to-[#D96570] mb-3">Olá, Criador</h2>
+                <p class="text-zinc-500 text-lg">Como posso potencializar suas buscas hoje?</p>
             </div>
         </main>
 
-        <div id="bottom-sheet-overlay" onclick="closeSheet()"></div>
-        <div id="bottom-sheet">
-            <div class="sheet-handle"></div>
-            <div class="sheet-item" onclick="sendAction('Execute cruzamento de dados: Busca Profunda (OSINT)')">
-                <span class="text-xl">🎯</span> <span>Busca Profunda (Cross-Data)</span>
+        <div id="plus-menu">
+            <div class="menu-item">
+                <span class="text-xl">📷</span> Câmera
             </div>
-            <div class="sheet-item" onclick="sendAction('Gere o dossiê financeiro e conexões societárias.')">
-                <span class="text-xl">📊</span> <span>Dossiê Financeiro</span>
+            <div class="menu-item">
+                <span class="text-xl">🖼️</span> Galeria
             </div>
-            <div class="sheet-item" onclick="sendAction('Trace o mapa de parentesco e possíveis vizinhos.')">
-                <span class="text-xl">🕸️</span> <span>Mapa de Vínculos</span>
+            <div class="menu-item">
+                <span class="text-xl">📎</span> Arquivo
+            </div>
+            <div class="menu-item border-t border-white/5 mt-2 pt-2" onclick="sendAction('Gerar Relatório OSINT Completo')">
+                <span class="text-xl">📊</span> Relatório Profissional
             </div>
         </div>
 
         <footer class="input-wrapper">
-            <div class="input-box">
-                <button onclick="openSheet()" class="p-3 text-zinc-400 hover:text-white rounded-full transition-colors active:bg-white/10">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <div class="input-box shadow-xl">
+                <button onclick="togglePlusMenu()" class="p-3 text-zinc-400 hover:text-white rounded-full transition active:bg-white/10">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
                 <textarea id="mainInput" placeholder="Digite aqui." rows="1" class="no-scrollbar" oninput="adjustHeight(this)"></textarea>
-                <button onclick="handleSend()" class="p-3 text-[#a8c7fa] hover:text-blue-300 transition-colors active:scale-90">
+                <button onclick="handleSend()" class="p-3 text-[#a8c7fa] hover:text-blue-300 transition active:scale-95">
                     <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
             </div>
@@ -89,57 +117,52 @@
     </div>
 
     <script>
-        const chat = document.getElementById('chat-area');
+        const chatArea = document.getElementById('chat-area');
         const input = document.getElementById('mainInput');
-        const sheet = document.getElementById('bottom-sheet');
-        const overlay = document.getElementById('bottom-sheet-overlay');
+        const plusMenu = document.getElementById('plus-menu');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const welcome = document.getElementById('welcome-screen');
 
-        function openSheet() {
-            overlay.style.display = 'block';
-            setTimeout(() => { overlay.style.opacity = '1'; sheet.style.bottom = '0'; }, 10);
-        }
+        // UI Toggles
+        function togglePlusMenu() { plusMenu.classList.toggle('open'); }
+        function toggleSidebar() { sidebar.classList.toggle('open'); overlay.classList.toggle('open'); }
+        function closeUI() { plusMenu.classList.remove('open'); sidebar.classList.remove('open'); overlay.classList.remove('open'); }
 
-        function closeSheet() {
-            sheet.style.bottom = '-100%';
-            overlay.style.opacity = '0';
-            setTimeout(() => { overlay.style.display = 'none'; }, 300);
-        }
+        // Actions
+        function newChat() { closeUI(); chatArea.innerHTML = ''; chatArea.appendChild(welcome); welcome.style.display = 'flex'; }
+        function sendAction(txt) { closeUI(); input.value = txt; handleSend(); }
+        function adjustHeight(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 180) + 'px'; }
 
-        function sendAction(text) { closeSheet(); input.value = text; handleSend(); }
-        
-        function adjustHeight(el) {
-            el.style.height = 'auto';
-            el.style.height = Math.min(el.scrollHeight, 150) + 'px';
-        }
-
+        // Render Message (Gemini Style)
         function renderMsg(text, role) {
-            const div = document.createElement('div');
+            const container = document.createElement('div');
             
             if (role === 'user') {
-                div.className = 'user-bubble';
-                div.innerText = text;
-                // Remove a mensagem de boas vindas inicial
-                const welcome = chat.querySelector('.text-center');
+                container.className = 'user-bubble shadow-md';
+                container.innerText = text;
                 if(welcome) welcome.style.display = 'none';
             } else {
-                div.className = 'ai-response flex gap-4';
+                container.className = 'ai-response flex gap-4 mb-8';
                 
-                // Formatação especial para o layout de dossiê cruzar os dados visualmente
+                // Envolve tabelas markdown no container fixo
                 let parsedText = marked.parse(text);
-                parsedText = parsedText.replace(/• (.*?):/g, '• <strong>$1:</strong>');
+                parsedText = parsedText.replace(/<table>/g, '<div class="table-container"><table>');
+                parsedText = parsedText.replace(/<\/table>/g, '</table></div>');
                 
-                div.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 shrink-0 mt-1 shadow-lg"></div>
-                    <div class="pt-1 flex-1 min-w-0">${parsedText}</div>
+                container.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-blue-600 shrink-0 mt-1 shadow-lg shadow-blue-500/20 flex items-center justify-center text-xs font-bold text-white">AZ</div>
+                    <div class="pt-1 flex-1 min-w-0 text-[15px]">${parsedText}</div>
                 `;
             }
-            chat.appendChild(div);
-            setTimeout(() => chat.scrollTop = chat.scrollHeight, 50);
+            chatArea.appendChild(container);
+            setTimeout(() => chatArea.scrollTop = chatArea.scrollHeight, 50);
         }
 
         async function handleSend() {
             const val = input.value.trim();
             if(!val) return;
+            closeUI();
             input.value = ''; adjustHeight(input);
             renderMsg(val, 'user');
 
@@ -152,13 +175,16 @@
                 const data = await res.json();
                 renderMsg(data.reply, 'ai');
             } catch (err) {
-                renderMsg("Falha na Matriz. Verifique a conexão do servidor.", 'ai');
+                renderMsg("Erro na conexão com os servidores centrais.", 'ai');
             }
         }
 
         input.addEventListener('keydown', (e) => {
             if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
         });
+        
+        // Fecha menus ao clicar no chat
+        chatArea.addEventListener('click', closeUI);
     </script>
 </body>
 </html>
